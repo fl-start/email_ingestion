@@ -1,0 +1,10 @@
+{
+  "elements": {},
+  "imports": [
+    "package:ffi/ffi.dart",
+    "package:objective_c/objective_c.dart",
+    "package:objective_c/src/objective_c_bindings_generated.dart",
+    "package:test/test.dart",
+    "asset:email_ingestion/example/ios/.symlinks/plugins/objective_c/test/util.dart"
+  ]
+}

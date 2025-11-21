@@ -1,0 +1,1 @@
+{"valid_import":true,"imports":[{"uri":"package:ffi/ffi.dart","transitive":false},{"uri":"package:native_test_helpers/native_test_helpers.dart","transitive":false},{"uri":"package:objective_c/objective_c.dart","transitive":false},{"uri":"package:objective_c/src/internal.dart","transitive":false},{"uri":"package:path/path.dart","transitive":false}],"elements":[]}

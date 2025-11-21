@@ -1,0 +1,7 @@
+{
+  "elements": {},
+  "imports": [
+    "package:hashed_kv_store/hashed_kv_store.dart",
+    "package:parallel_dio_pool/parallel_dio_pool.dart"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "elements": {},
+  "imports": [
+    "package:signals/signals.dart",
+    "package:email_ingestion/src/concurrent_db_client.dart"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "elements": {},
+  "imports": [
+    "package:dio/dio.dart",
+    "package:parallel_dio_pool/parallel_dio_pool.dart",
+    "package:hashed_kv_store/hashed_kv_store.dart",
+    "package:multi_identity_drift/multi_identity_drift.dart",
+    "package:email_ingestion/src/email_schema.dart"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "elements": {},
+  "imports": [
+    "package:ffi/ffi.dart",
+    "package:native_test_helpers/native_test_helpers.dart",
+    "package:objective_c/objective_c.dart",
+    "package:objective_c/src/internal.dart",
+    "package:path/path.dart"
+  ]
+}

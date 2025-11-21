@@ -1,0 +1,1 @@
+{"valid_import":true,"imports":[{"uri":"package:drift/drift.dart","transitive":false}],"elements":[{"kind":"database","name":"EmailDatabase","dart_name":"EmailDatabase"},{"kind":"table","name":"emails","dart_name":"Emails"}]}

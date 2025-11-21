@@ -1,0 +1,9 @@
+{
+  "elements": {},
+  "imports": [
+    "package:ffigen/src/code_generator/objc_built_in_types.dart",
+    "package:path/path.dart",
+    "package:test/test.dart",
+    "asset:email_ingestion/example/ios/.symlinks/plugins/objective_c/test/util.dart"
+  ]
+}

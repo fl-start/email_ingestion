@@ -1,0 +1,9 @@
+{
+  "elements": {},
+  "imports": [
+    "package:drift/drift.dart",
+    "package:drift/native.dart",
+    "package:flutter/foundation.dart",
+    "package:email_ingestion/src/email_schema.dart"
+  ]
+}

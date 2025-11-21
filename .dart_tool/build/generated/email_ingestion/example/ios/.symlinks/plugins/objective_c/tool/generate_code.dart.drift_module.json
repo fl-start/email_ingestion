@@ -1,0 +1,8 @@
+{
+  "elements": {},
+  "imports": [
+    "package:args/args.dart",
+    "package:ffigen/src/executables/ffigen.dart",
+    "package:yaml/yaml.dart"
+  ]
+}

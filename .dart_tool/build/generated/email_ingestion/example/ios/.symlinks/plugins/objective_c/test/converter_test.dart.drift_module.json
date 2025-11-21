@@ -1,0 +1,8 @@
+{
+  "elements": {},
+  "imports": [
+    "package:objective_c/objective_c.dart",
+    "package:test/test.dart",
+    "asset:email_ingestion/example/ios/.symlinks/plugins/objective_c/test/util.dart"
+  ]
+}

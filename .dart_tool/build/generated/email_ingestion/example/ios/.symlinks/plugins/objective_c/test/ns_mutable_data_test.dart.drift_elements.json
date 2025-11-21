@@ -1,0 +1,1 @@
+{"valid_import":true,"imports":[{"uri":"package:ffi/ffi.dart","transitive":false},{"uri":"package:objective_c/objective_c.dart","transitive":false},{"uri":"package:test/test.dart","transitive":false},{"uri":"asset:email_ingestion/example/ios/.symlinks/plugins/objective_c/test/util.dart","transitive":false}],"elements":[]}

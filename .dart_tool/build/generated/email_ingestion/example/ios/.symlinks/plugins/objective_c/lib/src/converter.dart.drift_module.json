@@ -1,0 +1,13 @@
+{
+  "elements": {},
+  "imports": [
+    "asset:email_ingestion/example/ios/.symlinks/plugins/objective_c/lib/src/internal.dart",
+    "asset:email_ingestion/example/ios/.symlinks/plugins/objective_c/lib/src/ns_array.dart",
+    "asset:email_ingestion/example/ios/.symlinks/plugins/objective_c/lib/src/ns_date.dart",
+    "asset:email_ingestion/example/ios/.symlinks/plugins/objective_c/lib/src/ns_dictionary.dart",
+    "asset:email_ingestion/example/ios/.symlinks/plugins/objective_c/lib/src/ns_number.dart",
+    "asset:email_ingestion/example/ios/.symlinks/plugins/objective_c/lib/src/ns_set.dart",
+    "asset:email_ingestion/example/ios/.symlinks/plugins/objective_c/lib/src/ns_string.dart",
+    "asset:email_ingestion/example/ios/.symlinks/plugins/objective_c/lib/src/objective_c_bindings_generated.dart"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "elements": {},
+  "imports": [
+    "package:email_ingestion/src/email_schema.dart",
+    "package:email_ingestion/src/email_pipeline.dart",
+    "package:email_ingestion/src/kv_adapter.dart",
+    "package:email_ingestion/src/concurrent_db_client.dart",
+    "package:email_ingestion/src/infinite_scroll_controller.dart",
+    "package:email_ingestion/src/infinite_scroll_widget.dart"
+  ]
+}

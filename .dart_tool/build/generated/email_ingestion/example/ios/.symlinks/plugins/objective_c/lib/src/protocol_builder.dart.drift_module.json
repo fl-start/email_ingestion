@@ -1,0 +1,10 @@
+{
+  "elements": {},
+  "imports": [
+    "package:ffi/ffi.dart",
+    "asset:email_ingestion/example/ios/.symlinks/plugins/objective_c/lib/src/c_bindings_generated.dart",
+    "asset:email_ingestion/example/ios/.symlinks/plugins/objective_c/lib/src/internal.dart",
+    "asset:email_ingestion/example/ios/.symlinks/plugins/objective_c/lib/src/objective_c_bindings_generated.dart",
+    "asset:email_ingestion/example/ios/.symlinks/plugins/objective_c/lib/src/selector.dart"
+  ]
+}

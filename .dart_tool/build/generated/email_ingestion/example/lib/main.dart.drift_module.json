@@ -1,0 +1,12 @@
+{
+  "elements": {},
+  "imports": [
+    "package:flutter/material.dart",
+    "package:path_provider/path_provider.dart",
+    "package:email_ingestion/email_ingestion.dart",
+    "package:hashed_kv_store/hashed_kv_store.dart",
+    "package:parallel_dio_pool/parallel_dio_pool.dart",
+    "package:multi_identity_drift/multi_identity_drift.dart",
+    "package:dio/dio.dart"
+  ]
+}

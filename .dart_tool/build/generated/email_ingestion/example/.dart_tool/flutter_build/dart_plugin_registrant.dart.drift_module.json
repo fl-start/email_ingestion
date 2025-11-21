@@ -1,0 +1,10 @@
+{
+  "elements": {},
+  "imports": [
+    "package:path_provider_android/path_provider_android.dart",
+    "package:path_provider_foundation/path_provider_foundation.dart",
+    "package:path_provider_linux/path_provider_linux.dart",
+    "package:path_provider_foundation/path_provider_foundation.dart",
+    "package:path_provider_windows/path_provider_windows.dart"
+  ]
+}

@@ -1,0 +1,1 @@
+{"valid_import":true,"imports":[{"uri":"package:drift/drift.dart","transitive":false},{"uri":"package:drift/native.dart","transitive":false},{"uri":"package:flutter/foundation.dart","transitive":false},{"uri":"package:email_ingestion/src/email_schema.dart","transitive":false}],"elements":[]}
