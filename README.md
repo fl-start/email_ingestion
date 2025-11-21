@@ -2,7 +2,7 @@
 
 A composable email ingestion pipeline: `dio.pipe(kv).pipe(db)` with infinite scroll support.
 
-> **Note**: See the main [README.md](../README.md) in the root directory for complete setup instructions and system overview.
+> **Note**: See the main [README.md](SETUP.md) in the root directory for complete setup instructions and system overview.
 
 ## Features
 
