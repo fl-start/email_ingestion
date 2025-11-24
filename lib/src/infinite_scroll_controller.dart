@@ -99,6 +99,67 @@ class InfiniteScrollController {
     }
   }
 
+  /// Refresh the total count and optionally refresh visible window if at end
+  /// Uses retry logic with exponential backoff to handle database locks
+  Future<void> refreshCount({bool refreshIfAtEnd = false}) async {
+    const maxRetries = 3;
+    const initialDelay = Duration(milliseconds: 50);
+    
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        final newCount = await db.getEmailCount();
+        final oldCount = totalCount.value;
+        totalCount.value = newCount;
+        
+        // If we went from 0 to having emails, or visible list is empty, refresh to show emails
+        final shouldRefreshForNewEmails = (oldCount == 0 && newCount > 0) || 
+                                          (visible.value.isEmpty && newCount > 0);
+        
+        // If count increased and user is at the end, refresh visible window
+        final shouldRefreshAtEnd = refreshIfAtEnd && newCount > oldCount && oldCount > 0;
+        
+        if (shouldRefreshForNewEmails) {
+          // First emails are being added - show them by centering on index 0
+          try {
+            await _centerOnIndex(0);
+          } catch (e) {
+            // Silently ignore errors when refreshing window - user can scroll manually
+          }
+        } else if (shouldRefreshAtEnd) {
+          final lastVisibleIndex = _visibleStartIndex + visible.value.length;
+          final isNearEnd = lastVisibleIndex >= oldCount - 5; // Within 5 items of end
+          
+          if (isNearEnd && newCount > oldCount) {
+            // User is at end and new emails were added - refresh to show them
+            // Use retry logic for this too
+            try {
+              await _centerOnIndex(_visibleStartIndex);
+            } catch (e) {
+              // Silently ignore errors when refreshing window - user can scroll manually
+            }
+          }
+        }
+        return; // Success, exit retry loop
+      } catch (e) {
+        final errorStr = e.toString();
+        // Check if it's a database lock error
+        if (errorStr.contains('database is locked') || errorStr.contains('locked')) {
+          if (attempt < maxRetries - 1) {
+            // Exponential backoff: 50ms, 100ms, 200ms
+            final delay = Duration(milliseconds: initialDelay.inMilliseconds * (1 << attempt));
+            await Future.delayed(delay);
+            continue; // Retry
+          }
+          // Max retries reached, silently fail
+          return;
+        }
+        // Not a lock error, rethrow
+        print('Error refreshing count: $e');
+        return;
+      }
+    }
+  }
+
   int approximateIndexFromScroll({required double scrollOffset}) {
     return (scrollOffset / rowExtent)
         .floor()
@@ -205,11 +266,32 @@ class InfiniteScrollController {
     final globalOffset = topStart;
     final globalLimit = topCount + visibleCount + bottomCount;
 
-    // Fetch in a single query (concurrent via isolate)
-    final maps = await db.fetchEmailWindow(
-      offset: globalOffset,
-      limit: globalLimit,
-    );
+    // Fetch in a single query (concurrent via isolate) with retry for locks
+    const maxRetries = 3;
+    List<Map<String, dynamic>> maps = [];
+    
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        maps = await db.fetchEmailWindow(
+          offset: globalOffset,
+          limit: globalLimit,
+        );
+        break; // Success
+      } catch (e) {
+        final errorStr = e.toString();
+        if ((errorStr.contains('database is locked') || errorStr.contains('locked')) 
+            && attempt < maxRetries - 1) {
+          // Exponential backoff: 50ms, 100ms, 200ms
+          final delay = Duration(milliseconds: 50 * (1 << attempt));
+          await Future.delayed(delay);
+          continue; // Retry
+        }
+        // Max retries or non-lock error
+        isLoading.value = false;
+        print('Error fetching email window: $e');
+        return;
+      }
+    }
 
     final items = maps.map(EmailDto.fromMap).toList(growable: false);
 

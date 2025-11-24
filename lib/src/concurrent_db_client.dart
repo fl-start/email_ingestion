@@ -95,6 +95,14 @@ void dbWorkerIsolateEntry(List<SendPort> ports) async {
         final executor = NativeDatabase(file);
         db = EmailDatabase(DatabaseConnection(executor));
 
+        // Enable WAL mode for better concurrency (allows multiple readers + one writer)
+        try {
+          await db.customStatement('PRAGMA journal_mode=WAL;');
+        } catch (e) {
+          // If WAL mode fails, continue anyway - database will still work
+          print('Warning: Could not enable WAL mode: $e');
+        }
+
         // Ensure schema is created by checking if tables exist
         // If not, they'll be created on first query/insert
         try {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -44,6 +45,8 @@ class _EmailIngestionScreenState extends State<EmailIngestionScreen> {
   String? _error;
   int _ingestedCount = 0;
   int _totalEmails = 0;
+  bool _isIngesting = false;
+  Timer? _countRefreshTimer;
 
   @override
   void initState() {
@@ -113,6 +116,15 @@ class _EmailIngestionScreenState extends State<EmailIngestionScreen> {
           .timeout(const Duration(seconds: 10));
       print('Database opened');
 
+      // Enable WAL mode for better concurrency (allows multiple readers + one writer)
+      try {
+        await _dbHandle!.db.customStatement('PRAGMA journal_mode=WAL;');
+        print('WAL mode enabled');
+      } catch (e) {
+        // If WAL mode fails, continue anyway - database will still work
+        print('Warning: Could not enable WAL mode: $e');
+      }
+
       // Ensure schema is created by running a simple query
       try {
         await _dbHandle!.db.getEmailCount().timeout(const Duration(seconds: 5));
@@ -170,6 +182,9 @@ class _EmailIngestionScreenState extends State<EmailIngestionScreen> {
           _totalEmails = _scrollController!.totalCount.value;
         });
         print('Initialization complete! Total emails: $_totalEmails');
+        
+        // Start periodic count refresh to update UI as emails are ingested
+        _startCountRefreshTimer();
       }
     } catch (e, st) {
       print('Initialization error: $e');
@@ -182,19 +197,63 @@ class _EmailIngestionScreenState extends State<EmailIngestionScreen> {
     }
   }
 
+  void _startCountRefreshTimer() {
+    // Refresh count periodically to update UI as emails are ingested
+    // Use longer interval during active ingestion to reduce lock contention
+    _countRefreshTimer?.cancel();
+    _countRefreshTimer = Timer.periodic(
+      _isIngesting 
+        ? const Duration(milliseconds: 2000) // Slower during ingestion
+        : const Duration(milliseconds: 1000), // Normal speed otherwise
+      (_) async {
+        if (_scrollController != null && _dbClient != null && mounted) {
+          try {
+            final oldCount = _scrollController!.totalCount.value;
+            // Always refresh during ingestion to show new emails as they appear
+            // Also refresh if not ingesting and user is at end
+            await _scrollController!.refreshCount(refreshIfAtEnd: true);
+            final newCount = _scrollController!.totalCount.value;
+            
+            if (newCount != oldCount && mounted) {
+              setState(() {
+                _totalEmails = newCount;
+              });
+            }
+          } catch (e) {
+            // Silently handle errors - refreshCount already handles retries internally
+            // Only log unexpected errors
+            if (!e.toString().contains('locked')) {
+              print('Error refreshing count: $e');
+            }
+          }
+        }
+      },
+    );
+  }
+
   Future<void> _fetchAndIngestEmails() async {
-    if (_pipeline == null) return;
+    if (_pipeline == null || _isIngesting) return;
 
     setState(() {
+      _isIngesting = true;
       _ingestedCount = 0;
+      _error = null;
     });
 
+    // Restart timer with slower refresh rate during ingestion
+    _startCountRefreshTimer();
+
+    // Run ingestion in background - don't await, let it run asynchronously
+    _ingestEmailsInBackground();
+  }
+
+  Future<void> _ingestEmailsInBackground() async {
     try {
       // Fetch email list from server
       final dio = Dio(BaseOptions(baseUrl: 'http://localhost:3000'));
       final response = await dio.get('/emails', queryParameters: {
         'page': 1,
-        'limit': 100000, // Fetch first 1000 for demo
+        'limit': 100000, // Fetch all emails for demo
       });
 
       final emailsData = response.data['emails'] as List;
@@ -202,30 +261,78 @@ class _EmailIngestionScreenState extends State<EmailIngestionScreen> {
           .map((e) => EmailMetadata.fromJson(e as Map<String, dynamic>))
           .toList();
 
-      // Ingest emails
+      print('Starting background ingestion of ${emails.length} emails...');
+
+      // Ingest emails in background - stream results
       final resultsStream = _pipeline!.ingestEmails(emails);
+      int successCount = 0;
+      
       await for (final result in resultsStream) {
         if (result.success) {
-          setState(() {
-            _ingestedCount++;
-          });
+          successCount++;
+          // Update UI periodically (every 10 emails) to avoid too many rebuilds
+          if (successCount % 10 == 0 || successCount == emails.length) {
+            if (mounted) {
+              setState(() {
+                _ingestedCount = successCount;
+              });
+            }
+          }
         }
       }
 
-      // Refresh scroll controller
-      await _scrollController?.init();
-      setState(() {
-        _totalEmails = _scrollController?.totalCount.value ?? 0;
-      });
-    } catch (e) {
-      setState(() {
-        _error = 'Ingestion failed: $e';
-      });
+      // Final update
+      if (mounted) {
+        setState(() {
+          _ingestedCount = successCount;
+          _isIngesting = false;
+        });
+      }
+
+      // Restart timer with normal refresh rate after ingestion
+      _startCountRefreshTimer();
+
+      // Refresh scroll controller to show new emails (with retry for locks)
+      if (_scrollController != null) {
+        const maxRetries = 3;
+        for (int attempt = 0; attempt < maxRetries; attempt++) {
+          try {
+            await _scrollController!.init();
+            if (mounted) {
+              setState(() {
+                _totalEmails = _scrollController!.totalCount.value;
+              });
+            }
+            break; // Success
+          } catch (e) {
+            final errorStr = e.toString();
+            if (errorStr.contains('database is locked') && attempt < maxRetries - 1) {
+              // Wait and retry
+              await Future.delayed(Duration(milliseconds: 100 * (attempt + 1)));
+              continue;
+            }
+            // Log non-lock errors or final failure
+            print('Error refreshing scroll controller: $e');
+            break;
+          }
+        }
+      }
+
+      print('Background ingestion complete! Ingested: $successCount / ${emails.length}');
+    } catch (e, st) {
+      print('Background ingestion error: $e\n$st');
+      if (mounted) {
+        setState(() {
+          _error = 'Ingestion failed: $e';
+          _isIngesting = false;
+        });
+      }
     }
   }
 
   @override
   void dispose() {
+    _countRefreshTimer?.cancel();
     _dbClient?.dispose();
     _dbHandle?.close();
     super.dispose();
@@ -250,11 +357,33 @@ class _EmailIngestionScreenState extends State<EmailIngestionScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
                           ElevatedButton(
-                            onPressed: _fetchAndIngestEmails,
-                            child: const Text('Fetch & Ingest Emails'),
+                            onPressed: _isIngesting ? null : _fetchAndIngestEmails,
+                            child: _isIngesting
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text('Fetch & Ingest Emails'),
                           ),
-                          Text('Ingested: $_ingestedCount'),
-                          Text('Total: $_totalEmails'),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Ingested: $_ingestedCount'),
+                              Text('Total: $_totalEmails'),
+                              if (_isIngesting)
+                                const Text(
+                                  'Ingesting in background...',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontStyle: FontStyle.italic,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                            ],
+                          ),
                         ],
                       ),
                       if (_error != null)
